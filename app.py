@@ -1,5 +1,5 @@
 """
-CFD Mesh Quality Classifier — Streamlit Dashboard
+Simulation/Mesh AI Analysis — Streamlit Dashboard
 """
 
 import os
@@ -55,7 +55,7 @@ RADAR_METRICS = [
 # ── Page config ───────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="CFD Mesh Quality Classifier",
+    page_title="Simulation/Mesh AI Analysis",
     page_icon="🌊",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -85,11 +85,11 @@ if "df" not in st.session_state:
 
 # ── Header ────────────────────────────────────────────────────────────────────
 
-st.title("🌊 CFD Mesh Quality Classifier")
-st.caption("Parse SimScale mesh logs · Explore quality metrics · Train & compare classifiers")
+st.title("🌊 Simulation/Mesh AI Analysis")
+st.caption("Parse SimScale mesh logs · Explore quality metrics · Train & compare classifiers · Analyse force coefficients")
 
-tab_parse, tab_explore, tab_train = st.tabs(
-    ["📂  Parse Logs", "📊  Explore Data", "🤖  Train Models"]
+tab_parse, tab_explore, tab_train, tab_forces = st.tabs(
+    ["📂  Parse Logs", "📊  Explore Data", "🤖  Train Models", "📈  Force Analysis"]
 )
 
 
@@ -520,3 +520,354 @@ with tab_train:
                     margin=dict(t=10, b=10),
                 )
                 st.plotly_chart(fig_imp, width="stretch")
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# TAB 4 — FORCE ANALYSIS
+# ════════════════════════════════════════════════════════════════════════════════
+
+CONVERGENCE_THRESHOLDS = {
+    "Converged":     0.01,   # CV < 1 %
+    "Marginal":      0.05,   # CV < 5 %
+    # else → Not converged
+}
+
+def convergence_status(cv: float) -> tuple[str, str]:
+    """Return (label, colour) for a coefficient of variation value."""
+    if cv < CONVERGENCE_THRESHOLDS["Converged"]:
+        return "Converged ✅", "#22c55e"
+    if cv < CONVERGENCE_THRESHOLDS["Marginal"]:
+        return "Marginal ⚠️", "#f59e0b"
+    return "Not converged ❌", "#ef4444"
+
+
+with tab_forces:
+    st.subheader("Force & moment coefficient analysis")
+    st.caption(
+        "Upload the force-coefficient CSV exported from SimScale. "
+        "The app will plot every coefficient over time and assess convergence."
+    )
+
+    force_file = st.file_uploader(
+        "Upload force-coefficient CSV",
+        type=["csv"],
+        key="force_csv",
+        help="Expected columns: a time column (s / iteration) + one or more FORCE_COEFFICIENT_* columns.",
+    )
+
+    if force_file is not None:
+        # ── Load & detect columns ─────────────────────────────────────────────
+        try:
+            fdf = pd.read_csv(force_file)
+        except Exception as e:
+            st.error(f"Could not parse CSV: {e}")
+            fdf = None
+
+        if fdf is not None:
+            fdf.columns = fdf.columns.str.strip()
+
+            # Auto-detect time column: prefer "Time", else first numeric col
+            time_candidates = [c for c in fdf.columns if "time" in c.lower() or "iteration" in c.lower()]
+            time_col = time_candidates[0] if time_candidates else fdf.columns[0]
+
+            coeff_cols = [
+                c for c in fdf.columns
+                if c != time_col and pd.api.types.is_numeric_dtype(fdf[c])
+            ]
+
+            if not coeff_cols:
+                st.error("No numeric coefficient columns found after the time column.")
+            else:
+                fdf = fdf[[time_col] + coeff_cols].dropna()
+
+                # ── Column selector ───────────────────────────────────────────
+                st.divider()
+                selected_cols = st.multiselect(
+                    "Coefficients to display",
+                    coeff_cols,
+                    default=coeff_cols,
+                )
+                if not selected_cols:
+                    selected_cols = coeff_cols
+
+                # Convergence window slider
+                window_pct = st.slider(
+                    "Convergence window (% of simulation from the end)",
+                    min_value=5, max_value=50, value=20, step=5,
+                    help="Stats are computed over this trailing portion of the time series.",
+                )
+                n_window = max(2, int(len(fdf) * window_pct / 100))
+                window_df = fdf.tail(n_window)
+
+                # ── Time-series plot ──────────────────────────────────────────
+                st.divider()
+                st.subheader("Coefficient history")
+
+                plot_df = fdf[[time_col] + selected_cols].melt(
+                    id_vars=time_col, var_name="Coefficient", value_name="Value"
+                )
+                fig_lines = px.line(
+                    plot_df,
+                    x=time_col,
+                    y="Value",
+                    color="Coefficient",
+                    height=420,
+                    labels={time_col: time_col, "Value": "Coefficient value"},
+                )
+
+                # Shade the convergence window
+                x_start = float(fdf[time_col].iloc[-n_window])
+                x_end   = float(fdf[time_col].iloc[-1])
+                fig_lines.add_vrect(
+                    x0=x_start, x1=x_end,
+                    fillcolor="#6366f1", opacity=0.08,
+                    line_width=0,
+                    annotation_text=f"convergence window ({window_pct}%)",
+                    annotation_position="top left",
+                )
+                # Rolling mean overlays (dashed, same colour, labelled)
+                roll_n = max(3, len(fdf) // 10)
+                palette = px.colors.qualitative.Plotly
+                for i, col in enumerate(selected_cols):
+                    rolled = fdf[col].rolling(roll_n, center=True).mean()
+                    fig_lines.add_scatter(
+                        x=fdf[time_col], y=rolled,
+                        mode="lines",
+                        line=dict(dash="dash", width=1.5, color=palette[i % len(palette)]),
+                        name=f"{col} (avg)",
+                        showlegend=True,
+                        opacity=0.6,
+                    )
+                fig_lines.update_layout(margin=dict(t=20, b=10))
+                st.plotly_chart(fig_lines, width="stretch")
+
+                # ── Convergence table ─────────────────────────────────────────
+                st.divider()
+                st.subheader("Convergence assessment")
+                st.caption(
+                    f"Statistics computed over the last **{window_pct}%** "
+                    f"({n_window} time steps) of the simulation."
+                )
+
+                rows = []
+                for col in selected_cols:
+                    window_vals = window_df[col]
+                    mean_val  = window_vals.mean()
+                    std_val   = window_vals.std()
+                    cv        = abs(std_val / mean_val) if mean_val != 0 else float("inf")
+                    total_chg = abs(fdf[col].iloc[-1] - fdf[col].iloc[0])
+                    status, _ = convergence_status(cv)
+                    rows.append({
+                        "Coefficient":   col,
+                        "Final mean":    mean_val,
+                        "Std dev":       std_val,
+                        "CV (std/mean)": cv,
+                        "Total change":  total_chg,
+                        "Status":        status,
+                    })
+
+                conv_df = pd.DataFrame(rows)
+
+                # Colour the Status column
+                def colour_status(val: str) -> str:
+                    if "Converged ✅" == val:
+                        return "background-color: #dcfce7"
+                    if "Marginal" in val:
+                        return "background-color: #fef9c3"
+                    return "background-color: #fee2e2"
+
+                fmt = {
+                    "Final mean":    "{:.4e}",
+                    "Std dev":       "{:.4e}",
+                    "CV (std/mean)": "{:.4f}",
+                    "Total change":  "{:.4e}",
+                }
+                st.dataframe(
+                    conv_df.style
+                        .format(fmt)
+                        .applymap(colour_status, subset=["Status"]),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+                n_conv = sum(1 for r in rows if "Converged ✅" == r["Status"])
+                n_marg = sum(1 for r in rows if "Marginal" in r["Status"])
+                n_bad  = sum(1 for r in rows if "Not converged" in r["Status"])
+                final_means = {r["Coefficient"]: r["Final mean"] for r in rows}
+
+                # ── Derived aerodynamic metrics ───────────────────────────────
+                st.divider()
+                st.subheader("Aerodynamic metrics")
+
+                def coeff_suffix(col: str) -> str:
+                    return col.split("_")[-1].upper()
+
+                cd_col  = next((c for c in selected_cols if coeff_suffix(c) == "CD"),  None)
+                cl_col  = next((c for c in selected_cols if coeff_suffix(c) == "CL"),  None)
+                clf_col = next((c for c in selected_cols if coeff_suffix(c) == "CLF"), None)
+                clr_col = next((c for c in selected_cols if coeff_suffix(c) == "CLR"), None)
+                cm_col  = next((c for c in selected_cols if coeff_suffix(c) == "CM"),  None)
+
+                metric_cards: list[tuple[str, str, str]] = []  # (label, value, help)
+
+                if cd_col:
+                    metric_cards.append(("Cd (final mean)", f"{final_means[cd_col]:.4e}", "Drag coefficient — resistance to motion. Lower = less drag."))
+                if cl_col:
+                    cl_v = final_means[cl_col]
+                    sign_note = "downforce ✅" if cl_v < 0 else "lift"
+                    metric_cards.append(("Cl (final mean)", f"{cl_v:.4e}", f"Total lift coefficient ({sign_note}). Negative = downforce, which increases grip."))
+                if cd_col and cl_col and final_means[cd_col] != 0:
+                    ld = abs(final_means[cl_col] / final_means[cd_col])
+                    metric_cards.append(("L/D ratio", f"{ld:.2f}", "Lift-to-drag efficiency. Higher = more aerodynamic force per unit drag."))
+                if clf_col and clr_col:
+                    total = final_means[clf_col] + final_means[clr_col]
+                    if total != 0:
+                        bal = final_means[clf_col] / total * 100
+                        metric_cards.append(("Aero balance", f"{bal:.1f}% front", "Front/(front+rear) downforce split. ~45–55% front is typical for balanced handling."))
+                if cm_col:
+                    metric_cards.append(("Cm (final mean)", f"{final_means[cm_col]:.4e}", "Pitching moment — nose-up/down tendency. Near 0 = balanced pitch forces."))
+
+                if metric_cards:
+                    cols_m = st.columns(len(metric_cards))
+                    for i, (lbl, val, hlp) in enumerate(metric_cards):
+                        cols_m[i].metric(lbl, val, help=hlp)
+
+                # ── Trend & oscillation analysis ──────────────────────────────
+                st.divider()
+                st.subheader("Trend analysis")
+                st.caption(
+                    f"Linear drift and oscillation computed over the convergence "
+                    f"window (last {window_pct}%, {n_window} steps). "
+                    "Dashed lines on the plot above show the 10-point rolling mean."
+                )
+
+                trend_rows = []
+                for col in selected_cols:
+                    x_w = window_df[time_col].values.astype(float)
+                    y_w = window_df[col].values.astype(float)
+                    slope = float(np.polyfit(x_w - x_w.mean(), y_w, 1)[0])
+                    mean_abs = abs(final_means[col])
+                    drift_pct = abs(slope) / mean_abs * 100 if mean_abs > 0 else float("inf")
+
+                    diffs = np.diff(y_w)
+                    sign_chg = int(np.sum(np.diff(np.sign(diffs)) != 0))
+                    oscillating = sign_chg > len(diffs) * 0.4
+
+                    direction = "Rising ↑" if slope > 1e-12 else ("Falling ↓" if slope < -1e-12 else "Flat →")
+                    trend_rows.append({
+                        "Coefficient":              col,
+                        "Slope (per time unit)":    slope,
+                        "Drift % per 100 units":    drift_pct,
+                        "Trend":                    direction,
+                        "Oscillating?":             "Yes ↕" if oscillating else "No →",
+                    })
+
+                trend_df = pd.DataFrame(trend_rows)
+                st.dataframe(
+                    trend_df.style.format({
+                        "Slope (per time unit)":  "{:.4e}",
+                        "Drift % per 100 units":  "{:.2f}",
+                    }),
+                    width="stretch",
+                    hide_index=True,
+                )
+
+                # ── CFD insights ──────────────────────────────────────────────
+                st.divider()
+                st.subheader("What the data is telling you")
+
+                insights: list[tuple[str, str]] = []
+
+                # Convergence status
+                if n_bad == 0 and n_marg == 0:
+                    insights.append(("success", f"All {len(selected_cols)} coefficient(s) have **converged** (CV < 1% in the last {window_pct}% of the run). It is safe to use the final mean values for design decisions."))
+                elif n_bad == 0:
+                    insights.append(("warning", f"{n_conv} converged, {n_marg} are **marginal**. Run the simulation for roughly {int(len(fdf) * 0.5)} more time steps and re-check before extracting final values."))
+                else:
+                    insights.append(("error", f"{n_bad} coefficient(s) are **still drifting** (CV ≥ 5%). The simulation has not reached steady state — do not use these values yet. Extend the run time and monitor whether the drift rate is decreasing."))
+
+                # Still-drifting coefficients
+                fast_drift = [r for r in trend_rows if r["Drift % per 100 units"] > 5]
+                if fast_drift:
+                    names = ", ".join(r["Coefficient"] for r in fast_drift)
+                    insights.append(("error", f"**Fast drift detected** in {names}: values are changing >5% per 100 time units. The solver has not settled — keep running."))
+
+                # L/D insight
+                ld_card = next((c for c in metric_cards if c[0] == "L/D ratio"), None)
+                if ld_card:
+                    ld_val = float(ld_card[1])
+                    if ld_val > 10:
+                        insights.append(("success", f"**L/D = {ld_val:.1f}** — excellent aerodynamic efficiency. The geometry generates a lot of downforce/lift for its drag penalty."))
+                    elif ld_val > 3:
+                        insights.append(("info", f"**L/D = {ld_val:.1f}** — moderate efficiency. There may be drag-reduction opportunities (smoothing wake geometry, reducing frontal area) without sacrificing much downforce."))
+                    else:
+                        insights.append(("warning", f"**L/D = {ld_val:.1f}** — drag is high relative to lift. Review bluff bodies, separation zones, or high-angle surfaces in the geometry."))
+
+                # Aero balance insight
+                bal_card = next((c for c in metric_cards if c[0] == "Aero balance"), None)
+                if bal_card:
+                    bal_val = float(bal_card[1].split("%")[0])
+                    if 42 <= bal_val <= 58:
+                        insights.append(("success", f"**Aero balance {bal_val:.1f}% front** — well centred. The downforce is distributed evenly between axles, supporting neutral handling balance."))
+                    elif bal_val > 58:
+                        insights.append(("warning", f"**Aero balance {bal_val:.1f}% front** — front-heavy. Excess front downforce can cause understeer at high speed. Consider reducing front diffuser angle or adding rear wing."))
+                    else:
+                        insights.append(("warning", f"**Aero balance {bal_val:.1f}% front** — rear-heavy. Excess rear downforce can cause oversteer. Consider reducing rear wing angle or increasing front splitter size."))
+
+                # Pitching moment insight
+                if cm_col:
+                    cm_v = final_means[cm_col]
+                    cd_ref = abs(final_means[cd_col]) if cd_col else 1
+                    if abs(cm_v) < cd_ref * 0.5:
+                        insights.append(("info", f"**Pitching moment Cm ≈ {cm_v:.3e}** — relatively small. The geometry produces balanced pitch forces with no strong nose-up or nose-down tendency."))
+                    elif cm_v > 0:
+                        insights.append(("warning", f"**Pitching moment Cm = {cm_v:.3e} (positive / nose-up)**. At high speed this transfers load to the rear axle and reduces front grip. Check front-end geometry."))
+                    else:
+                        insights.append(("warning", f"**Pitching moment Cm = {cm_v:.3e} (negative / nose-down)**. Increased front load — monitor for front tyre overloading or understeer at high speed."))
+
+                # Oscillation insight
+                osc = [r["Coefficient"] for r in trend_rows if "Yes" in r["Oscillating?"]]
+                if osc:
+                    insights.append(("warning", f"**Oscillating signal** in: {', '.join(osc)}. This can indicate: unsteady separated flow, vortex shedding, or a time step that is too coarse. Check mesh refinement in wake regions and consider a finer time step."))
+
+                # Cl sign check
+                if cl_col:
+                    if final_means[cl_col] > 0:
+                        insights.append(("warning", "**Cl is positive (lift, not downforce)**. For ground-vehicle aerodynamics this increases load transfer and reduces grip. Verify this is the intended configuration — a negative Cl (downforce) is usually desirable."))
+
+                for severity, msg in insights:
+                    getattr(st, severity)(msg)
+
+                # ── Final-value summary ───────────────────────────────────────
+                st.divider()
+                with st.expander("Final values — mean ± std over convergence window", expanded=True):
+                    for r in rows:
+                        status_icon = "✅" if "Converged" in r["Status"] else ("⚠️" if "Marginal" in r["Status"] else "❌")
+                        st.markdown(
+                            f"{status_icon} **{r['Coefficient']}**: "
+                            f"`{r['Final mean']:.6e}` ± `{r['Std dev']:.2e}`"
+                        )
+
+                # ── Reference glossary ────────────────────────────────────────
+                with st.expander("📖 Coefficient reference guide"):
+                    st.markdown("""
+| Coefficient | What it measures | Good direction | Typical range |
+|---|---|---|---|
+| **Cd** | Drag — resistance to forward motion | Lower = less drag | 0.1 – 0.5 (streamlined bodies) |
+| **Cl** | Total lift/downforce | Negative = downforce (more grip) | −3 to +1 depending on config |
+| **Clf** | Front-axle lift component | Negative = front downforce | — |
+| **Clr** | Rear-axle lift component | Negative = rear downforce | — |
+| **Cm** | Pitching moment (nose-up/down tendency) | Close to 0 = balanced | −0.5 to +0.5 |
+| **L/D** | Aerodynamic efficiency (Cl / Cd) | Higher = more force per drag | 1 – 20+ |
+| **Aero balance** | Front ÷ (Front + Rear) downforce | 42 – 58% front = neutral | — |
+""")
+                    st.markdown("""
+**Convergence criteria:**
+- ✅ **Converged** — coefficient of variation (std ÷ |mean|) < 1% in the window
+- ⚠️ **Marginal** — CV between 1% and 5%
+- ❌ **Not converged** — CV > 5%
+
+**Oscillation flag:** triggered when >40% of consecutive differences alternate sign inside the window, suggesting unsteady or periodically separated flow.
+""")
+    else:
+        st.info("Upload a force-coefficient CSV above to get started.")
