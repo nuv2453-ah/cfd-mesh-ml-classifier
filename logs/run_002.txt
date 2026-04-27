@@ -1,0 +1,185 @@
+****************************************************************************************************************
+
+SimScale incorporates Simulation Modeling Suite(TM) software by Simmetrix Inc. © 1997-2020. All Rights Reserved.
+
+****************************************************************************************************************
+
+Maximum precision of model and its entities: 1.3245916770529126e-05 m.
+
+Absolute small feature tolerance: 1e-05 m.
+
+Gap refinement size is reaching lower cell size cap for 0 faces. Consider lowering model tolerance if resulting mesh fineness is too coarse.
+
+Mesh quality metrics:
+
+tetEdgeRatio
+
+	min: 1.0000755085514508
+
+	max: 33.25529781170386
+
+	average: 1.6927997022534025
+
+	standard deviation 0.34751904465517364
+
+	median: 1.6908275244254294
+
+		99.9-th percentile: 3.01623401734339
+
+		99.99-th percentile: 11.785340000613568
+
+		99.999-th percentile: 23.13481373607458
+
+quadMaxAngle
+
+	min: 90
+
+	max: 175.96214260838474
+
+	average: 93.66954656956383
+
+	standard deviation 9.59091000253739
+
+	median: 90
+
+		99.9-th percentile: 153.26874249772825
+
+		99.99-th percentile: 165.84882217068244
+
+		99.999-th percentile: 168.46942185541155
+
+triMaxAngle
+
+	min: 60.00000000000001
+
+	max: 155.47082995188745
+
+	average: 79.14752215295364
+
+	standard deviation 11.697317703695074
+
+	median: 76.68104224522939
+
+		99.9-th percentile: 117.64991658323343
+
+		99.99-th percentile: 127.47463531030527
+
+		99.999-th percentile: 142.8667645588571
+
+triMinAngle
+
+	min: 1.4672998136256021
+
+	max: 59.99999999999999
+
+	average: 45.032233322491656
+
+	standard deviation 7.799908739734023
+
+	median: 45.03717655060872
+
+		99.9-th percentile: 59.65581835658755
+
+		99.99-th percentile: 59.99750216578821
+
+		99.999-th percentile: 59.999999999999986
+
+volumeRatio
+
+	min: 1
+
+	max: 19.832421153793767
+
+	average: 1.3627248181626228
+
+	standard deviation 0.56115414298183
+
+	median: 1.207170466789855
+
+		99.9-th percentile: 5.424688271183023
+
+		99.99-th percentile: 9.58813651931594
+
+		99.999-th percentile: 10.317773125162965
+
+tetAspectRatio
+
+	min: 1.0000503472711677
+
+	max: 14.586570194260487
+
+	average: 1.5159507574145068
+
+	standard deviation 0.2539842036979397
+
+	median: 1.5144197119298821
+
+		99.9-th percentile: 2.2738845058419663
+
+		99.99-th percentile: 8.73361005291759
+
+		99.999-th percentile: 13.645912462912193
+
+nonOrthogonality
+
+	min: 0
+
+	max: 85.43016953666059
+
+	average: 14.744642773010062
+
+	standard deviation 11.958892682169767
+
+	median: 13.155336962388802
+
+		99.9-th percentile: 65.78910190046169
+
+		99.99-th percentile: 77.77820787027301
+
+		99.999-th percentile: 83.71941184837823
+
+skewness
+
+	min: 0
+
+	max: 8.788556666833442
+
+	average: 0.1439536613914037
+
+	standard deviation 0.1707943229758659
+
+	median: 0.12267897066194136
+
+		99.9-th percentile: 2.3061019394929376
+
+		99.99-th percentile: 4.055451611764158
+
+		99.999-th percentile: 5.7297218442459945
+
+aspectRatio
+
+	min: 0.014069543009641033
+
+	max: 14.586570194260487
+
+	average: 1.2820552715038411
+
+	standard deviation 0.5211646840651852
+
+	median: 1.4231823411997164
+
+		99.9-th percentile: 2.2271592191972274
+
+		99.99-th percentile: 6.901991016510746
+
+		99.999-th percentile: 12.205931926375781
+
+Overall mesh quality (based on the 99-percentile): 0.607017
+
+Overall mesh quality is computed from: 
+
+	Non Orthogonality: 49.587387 (normalized value: 0.648288, weight: 0.60)
+
+	Skewness: 0.505351 (normalized value: 0.603294, weight: 0.30)
+
+	Aspect Ratio: 1.992724 (normalized value: 0.370566, weight: 0.10)

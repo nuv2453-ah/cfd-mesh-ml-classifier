@@ -49,10 +49,7 @@ def load_dataset(csv_path: Path):
     df = df.dropna(subset=["label"])
 
     feature_cols = [c for c in df.columns if c not in NON_FEATURE_COLS]
-    # Drop any non-numeric feature columns (shouldn't be any, but be safe)
     feature_cols = [c for c in feature_cols if pd.api.types.is_numeric_dtype(df[c])]
-
-    # Drop columns that are entirely NaN (rare metric absent in all runs)
     feature_cols = [c for c in feature_cols if df[c].notna().any()]
 
     X = df[feature_cols].fillna(df[feature_cols].median(numeric_only=True))
@@ -75,9 +72,9 @@ def evaluate(name: str, model, X, y) -> None:
     print(f"--- {name} ---")
     print(f"  {cv}-fold CV accuracy: {scores.mean():.3f} +/- {scores.std():.3f}")
 
-    # Also do a single 70/30 split for a confusion matrix
     X_tr, X_te, y_tr, y_te = train_test_split(
-        X, y, test_size=0.3, random_state=42, stratify=y if y.value_counts().min() >= 2 else None
+        X, y, test_size=0.3, random_state=42,
+        stratify=y if y.value_counts().min() >= 2 else None
     )
     model.fit(X_tr, y_tr)
     y_pred = model.predict(X_te)
@@ -99,7 +96,7 @@ def main(csv_path: Path) -> None:
 
     lr = Pipeline([
         ("scale", StandardScaler()),
-        ("lr", LogisticRegression(max_iter=2000, multi_class="auto")),
+        ("lr", LogisticRegression(max_iter=2000)),
     ])
     evaluate("Logistic Regression", lr, X, y)
 
@@ -116,3 +113,8 @@ if __name__ == "__main__":
         print("Usage: python train_mesh_classifier.py mesh_dataset.csv")
         sys.exit(1)
     main(Path(sys.argv[1]))
+
+
+
+
+    

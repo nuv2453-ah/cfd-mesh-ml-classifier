@@ -57,8 +57,20 @@ RUN_METADATA = {
         "converged": True,
         "label": "good",
     },
-    # Add more runs here:
-    # "run_002": { ... },
+    # TODO: fill in the actual parameters you used for run_002 and assign a label.
+    # The log shows overall_quality=0.607 (vs 0.673 for run_001) and higher
+    # nonOrthogonality/skewness — likely "marginal" or "bad".
+    # "run_002": {
+    #     "mesh_fineness": ???,
+    #     "num_inflation_layers": ???,
+    #     "first_layer_thickness": ???,
+    #     "growth_rate": ???,
+    #     "cell_count": ???,
+    #     "final_Cl": ???,
+    #     "final_Cd": ???,
+    #     "converged": ???,
+    #     "label": "marginal",  # or "bad" — review Cl/Cd vs reference
+    # },
 }
 
 
@@ -94,8 +106,6 @@ STAT_PATTERNS = {
 
 def parse_metric_block(log_text: str, metric: str) -> dict:
     """Extract every statistic for one named metric from the log."""
-    # Find the block that starts at this metric name and ends at the next
-    # metric name or end of file.
     other_metrics = [m for m in METRIC_NAMES if m != metric]
     next_metric_alt = "|".join(other_metrics + [r"Overall mesh quality"])
     block_re = (
@@ -129,7 +139,6 @@ def parse_overall_quality(log_text: str) -> dict:
     if m:
         out["overall_quality"] = float(m.group(1))
 
-    # Components: Non Orthogonality, Skewness, Aspect Ratio
     components = {
         "nonOrtho_component": r"Non Orthogonality:\s*([-\d.eE+]+)",
         "skewness_component": r"Skewness:\s*([-\d.eE+]+)",
@@ -145,8 +154,6 @@ def parse_overall_quality(log_text: str) -> dict:
 def parse_log_file(path: Path) -> dict:
     """Parse a single mesh log file into a flat dict of features."""
     text = path.read_text(encoding="utf-8", errors="ignore")
-
-    # Strip Markdown-style triple-backtick fences that some users paste in.
     text = re.sub(r"^```.*?$", "", text, flags=re.MULTILINE)
 
     row = {"run_id": path.stem}
@@ -177,8 +184,7 @@ def build_dataset(log_dir: Path, output_csv: Path) -> None:
                 f"  ! No metadata for {log_path.stem} - "
                 f"add it to RUN_METADATA in the script."
             )
-        merged = {**meta, **parsed}  # parsed metrics win on key collision
-        # But put run_id first and label last for readability
+        merged = {**meta, **parsed}
         ordered = {"run_id": merged.pop("run_id", log_path.stem)}
         ordered.update({k: v for k, v in merged.items() if k != "label"})
         if "label" in meta:
@@ -186,13 +192,11 @@ def build_dataset(log_dir: Path, output_csv: Path) -> None:
         rows.append(ordered)
         print(f"  parsed {log_path.name} ({len(parsed) - 1} metric features)")
 
-    # Build a stable column order: run_id, then metadata keys, then metrics, then label
     all_keys = []
     for r in rows:
         for k in r.keys():
             if k not in all_keys:
                 all_keys.append(k)
-    # Move 'label' to the end if present
     if "label" in all_keys:
         all_keys.remove("label")
         all_keys.append("label")
@@ -209,7 +213,7 @@ def build_dataset(log_dir: Path, output_csv: Path) -> None:
 
 
 # ----------------------------------------------------------------------------
-# Self-test: parse the sample log you shared
+# Self-test: parse the sample log
 # ----------------------------------------------------------------------------
 
 SAMPLE_LOG = """Maximum precision of model and its entities: 1e-08 m.
@@ -326,7 +330,6 @@ def self_test() -> None:
 
     try:
         row = parse_log_file(tmp_path)
-        # Spot-check a handful of values that we know from the sample
         checks = {
             "nonOrthogonality_average": 12.506651704581033,
             "nonOrthogonality_max": 89.76684687521428,
@@ -364,3 +367,5 @@ if __name__ == "__main__":
         log_dir = Path(args[0]) if len(args) >= 1 else Path("./logs")
         output_csv = Path(args[1]) if len(args) >= 2 else Path("./mesh_dataset.csv")
         build_dataset(log_dir, output_csv)
+
+        
