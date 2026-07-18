@@ -3,32 +3,32 @@ Element type: Tetrahedra
 Non Orthogonality
 Acceptable range: 0.0 to 88.0
 	min: 0.0
-	max: 87.7
-	average: 29.6
-	99.99-th percentile: 87.7
+	max: 89.4
+	average: 29.8
+	99.99-th percentile: 89.4
 Edge Ratio
 Acceptable range: 0.0 to 100.0
 	min: 1.0
-	max: 18.2
+	max: 19.8
 	average: 1.7
-	99.99-th percentile: 18.2
+	99.99-th percentile: 19.8
 Volume Ratio
 Acceptable range: 0.0 to 100.0
 	min: 1.0
-	max: 59.1
+	max: 64.7
 	average: 2.0
-	99.99-th percentile: 59.1
+	99.99-th percentile: 64.7
 Aspect Ratio
 Acceptable range: 0.0 to 100.0
 	min: 1.0
-	max: 35.6
+	max: 79.9
 	average: 1.7
-	99.99-th percentile: 35.6
+	99.99-th percentile: 79.9
 Skewness
 Acceptable range: 0.0 to 100.0
 	min: 0.0
-	max: 4.5
+	max: 5.3
 	average: 0.4
-	99.99-th percentile: 4.5
+	99.99-th percentile: 5.3
 Min Edge Length: 0.0
-Number of volumes: 433296
+Number of volumes: 506715

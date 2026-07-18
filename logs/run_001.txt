@@ -1,185 +1,34 @@
-****************************************************************************************************************
-
-SimScale incorporates Simulation Modeling Suite(TM) software by Simmetrix Inc. © 1997-2020. All Rights Reserved.
-
-****************************************************************************************************************
-
-Maximum precision of model and its entities: 1e-08 m.
-
-Absolute small feature tolerance: 1e-05 m.
-
-Gap refinement size is reaching lower cell size cap for 0 faces. Consider lowering model tolerance if resulting mesh fineness is too coarse.
-
 Mesh quality metrics:
-
-tetEdgeRatio
-
-	min: 1.0000755085514497
-
-	max: 27.94032903448313
-
-	average: 1.6957980037475855
-
-	standard deviation 0.30480053204851204
-
-	median: 1.675521962623866
-
-		99.9-th percentile: 3.305802333765203
-
-		99.99-th percentile: 4.613885116717533
-
-		99.999-th percentile: 18.0046623980038
-
-quadMaxAngle
-
-	min: 90
-
-	max: 169.12941581241654
-
-	average: 90.28347238842943
-
-	standard deviation 2.673255825229437
-
-	median: 90
-
-		99.9-th percentile: 133.91851200328554
-
-		99.99-th percentile: 165.31547427734534
-
-		99.999-th percentile: 169.11911814357978
-
-triMaxAngle
-
-	min: 60.00000000000001
-
-	max: 156.63576204272016
-
-	average: 79.83175662980409
-
-	standard deviation 12.801729867784928
-
-	median: 77.06190491206804
-
-		99.9-th percentile: 117.52939492622025
-
-		99.99-th percentile: 124.06728101990065
-
-		99.999-th percentile: 129.78996778810316
-
-triMinAngle
-
-	min: 1.6230726938805564
-
-	max: 60.00000000000001
-
-	average: 45.21734656619261
-
-	standard deviation 8.306105194774114
-
-	median: 45.09489721761922
-
-		99.9-th percentile: 59.99750216578822
-
-		99.99-th percentile: 59.99999999999991
-
-		99.999-th percentile: 60.00000000000001
-
-volumeRatio
-
-	min: 1
-
-	max: 227.58443397804828
-
-	average: 1.3421724428090576
-
-	standard deviation 0.6991048218264179
-
-	median: 1.0983691799713413
-
-		99.9-th percentile: 6.000000000000112
-
-		99.99-th percentile: 10.000000000000016
-
-		99.999-th percentile: 11.472912995279165
-
-tetAspectRatio
-
-	min: 1.0000503472711662
-
-	max: 174.88030382495447
-
-	average: 1.5692659999156937
-
-	standard deviation 0.3450655906048141
-
-	median: 1.588400839252388
-
-		99.9-th percentile: 2.272764045933034
-
-		99.99-th percentile: 3.1114586713359933
-
-		99.999-th percentile: 11.273662383183506
-
-nonOrthogonality
-
-	min: 0
-
-	max: 89.76684687521428
-
-	average: 12.506651704581033
-
-	standard deviation 11.924319450241184
-
-	median: 10.627448376636563
-
-		99.9-th percentile: 55.26405779820152
-
-		99.99-th percentile: 64.5615260564646
-
-		99.999-th percentile: 77.50091877516007
-
-skewness
-
-	min: 0
-
-	max: 3.5147116799818288
-
-	average: 0.14167662845037743
-
-	standard deviation 0.13593318386263833
-
-	median: 0.12499999999998249
-
-		99.9-th percentile: 1.0978856816171634
-
-		99.99-th percentile: 1.1582305177551766
-
-		99.999-th percentile: 2.465293791847433
-
-aspectRatio
-
-	min: 0.03477709091076951
-
-	max: 174.88030382495447
-
-	average: 1.4043321902020858
-
-	standard deviation 0.44357222482390024
-
-	median: 1.4711912779519103
-
-		99.9-th percentile: 2.247312498266706
-
-		99.99-th percentile: 2.545242394567671
-
-		99.999-th percentile: 9.230673544938659
-
-Overall mesh quality (based on the 99-percentile): 0.673940
-
-Overall mesh quality is computed from: 
-
-	Non Orthogonality: 40.609775 (normalized value: 0.75916, weight: 0.60)
-
-	Skewness: 0.501160 (normalized value: 0.605827, weight: 0.30)
-
-	Aspect Ratio: 2.002511 (normalized value: 0.366957, weight: 0.10)
+Element type: Tetrahedra
+Non Orthogonality
+Acceptable range: 0.0 to 88.0
+	min: 0.0
+	max: 87.6
+	average: 27.8
+	99.99-th percentile: 87.6
+Edge Ratio
+Acceptable range: 0.0 to 100.0
+	min: 1.0
+	max: 18.7
+	average: 1.7
+	99.99-th percentile: 18.7
+Volume Ratio
+Acceptable range: 0.0 to 100.0
+	min: 1.0
+	max: 45.1
+	average: 2.0
+	99.99-th percentile: 45.1
+Aspect Ratio
+Acceptable range: 0.0 to 100.0
+	min: 1.0
+	max: 26.0
+	average: 1.5
+	99.99-th percentile: 26.0
+Skewness
+Acceptable range: 0.0 to 100.0
+	min: 0.0
+	max: 4.2
+	average: 0.3
+	99.99-th percentile: 4.2
+Min Edge Length: 0.0
+Number of volumes: 947046
